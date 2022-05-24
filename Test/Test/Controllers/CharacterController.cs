@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Test.Dtos.Character;
 using Test.Models;
@@ -7,6 +10,7 @@ using Test.Services;
 
 namespace Test.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CharacterController : ControllerBase
@@ -20,12 +24,14 @@ namespace Test.Controllers
 
 
 
-
         [HttpGet]
         [Route("GetAll")]
         public async Task<ActionResult<ServiceResponse<List<GetCharacterDto>>>> Get()
         {
-            return Ok(await _service.GetAllCharacters());
+            int id = int.Parse(User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            
+            
+            return Ok(await _service.GetAllCharacters(id));
         }
 
         [HttpGet("{id}")]
@@ -45,7 +51,17 @@ namespace Test.Controllers
         {
             var response = await _service.UpdateCharacter(ch);
             if (response.Success)
-                return Ok(await _service.UpdateCharacter(ch));
+                return Ok(response);
+            else
+                return NotFound(response);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<ServiceResponse<List<GetCharacterDto>>>> Delete(int id)
+        {
+            var response = await _service.DeleteCharacter(id);
+            if (response.Data!=null)
+                return Ok(response);
             else
                 return NotFound(response);
         }

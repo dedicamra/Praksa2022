@@ -31,7 +31,7 @@ namespace Test.Controllers
             int id = int.Parse(User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier).Value);
             
             
-            return Ok(await _service.GetAllCharacters(id));
+            return Ok(await _service.GetAllCharacters());
         }
 
         [HttpGet("{id}")]
@@ -65,6 +65,13 @@ namespace Test.Controllers
             else
                 return NotFound(response);
         }
+
+        [HttpPost("Skill")]
+        public async Task<ActionResult<ServiceResponse<GetCharacterDto>>> AddCharacterSkill(AddCharacterSkillDto newSkill)
+        {
+            return Ok(await _service.AddCharacterSkill(newSkill));
+        }
+
 
     }
 }

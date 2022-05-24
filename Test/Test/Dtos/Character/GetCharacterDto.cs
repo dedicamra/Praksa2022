@@ -1,4 +1,7 @@
-﻿using Test.Models;
+﻿using System.Collections.Generic;
+using Test.Dtos.Skills;
+using Test.Dtos.Weapon;
+using Test.Models;
 
 namespace Test.Dtos.Character
 {
@@ -11,5 +14,7 @@ namespace Test.Dtos.Character
         public int Defence { get; set; } = 10;
         public int Intelligence { get; set; } = 10;
         public RpgClass Class { get; set; } = RpgClass.Knight;
+        public GetWeaponDto Weapon { get; set; }
+        public List<GetSkillDto> Skills { get; set; }
     }
 }

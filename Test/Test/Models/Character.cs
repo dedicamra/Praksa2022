@@ -1,4 +1,6 @@
-﻿namespace Test.Models
+﻿using System.Collections.Generic;
+
+namespace Test.Models
 {
     public class Character
     {
@@ -10,5 +12,8 @@
         public int Intelligence { get; set; } = 10;
         public RpgClass Class { get; set; } = RpgClass.Knight;
         public User User { get; set; }
+        public virtual Weapon Weapon { get; set; }
+        public List<Skill> Skills{ get; set; }
+
     }
 }

@@ -67,10 +67,10 @@ namespace WebApplication3._1.Services.CharacterS
         }
 
 
-        public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
+        public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters(int userId)
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
-            var dbCharacters = await _db.Characters
+            var dbCharacters = await _db.Characters.Where(x=>x.Id==userId)
                  // .Include(x => x.Weapon)
               //  .Include(x => x.Skills)
               .ToListAsync();

@@ -11,7 +11,7 @@ namespace WebApplication3._1.Data
         }
 
         public DbSet<Character> Characters { get; set; }
-        //public DbSet<User> User { get; set; }
+        public DbSet<User> User { get; set; }
         //public DbSet<Weapon> Weapons{ get; set; }
         //public DbSet<Skill> Skills{ get; set; }
 

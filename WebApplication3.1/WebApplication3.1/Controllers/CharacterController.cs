@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApplication3._1.Dtos.Character;
 using WebApplication3._1.Models;
@@ -9,6 +11,7 @@ using WebApplication3._1.Services.CharacterS;
 
 namespace WebApplication3._1.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CharacterController : ControllerBase
@@ -27,7 +30,8 @@ namespace WebApplication3._1.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<ServiceResponse<List<GetCharacterDto>>>> Get()
         {
-            return Ok(await _service.GetAllCharacters());
+            int id= int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value);
+            return Ok(await _service.GetAllCharacters(id));
         }
 
         [HttpGet("{id}")]

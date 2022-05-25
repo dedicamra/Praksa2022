@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using WebApplication3._1.Services.CharacterS;
 
 namespace WebApplication3._1
 {
@@ -32,6 +33,10 @@ namespace WebApplication3._1
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebApplication3._1", Version = "v1" });
             });
+
+            services.AddAutoMapper(typeof(Startup));
+            services.AddScoped<ICharactersService, CharactersService>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -44,7 +49,7 @@ namespace WebApplication3._1
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "WebApplication3._1 v1"));
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 

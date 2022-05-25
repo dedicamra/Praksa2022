@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Test.Dtos.Character;
+using Test.Dtos.Fights;
 using Test.Dtos.Skills;
 using Test.Dtos.Weapon;
 using Test.Models;
@@ -15,6 +16,7 @@ namespace Test
             CreateMap<Weapon, GetWeaponDto>();
             CreateMap<Weapon, AddWeaponDto>();
             CreateMap<Skill, GetSkillDto>();
+            CreateMap<Character, HightscoreDto>();
 
 
 

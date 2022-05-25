@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Test.Data;
 using Test.Services;
+using Test.Services.FightService;
 
 namespace Test
 {
@@ -53,6 +54,7 @@ namespace Test
             services.AddScoped<ICharactersService, CharactersService>();
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IWeaponService, WeaponService>();
+            services.AddScoped<IFigthService, FigthService>();
 
 
 

@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using WebApplication3._1.Dtos.Character;
-//using WebApplication3._1.Dtos.Fights;
-//using WebApplication3._1.Dtos.Skills;
-//using WebApplication3._1.Dtos.Weapon;
+using WebApplication3._1.Dtos.Fights;
+using WebApplication3._1.Dtos.Skills;
+using WebApplication3._1.Dtos.Weapon;
 using WebApplication3._1.Models;
 
 namespace WebApplication3._1
@@ -12,11 +12,11 @@ namespace WebApplication3._1
         public AuotoMapperProfile()
         {
             CreateMap<Character, GetCharacterDto>();
-            CreateMap<Character, AddCharacterDto>(); 
-            //CreateMap<Weapon, GetWeaponDto>();
-            //CreateMap<Weapon, AddWeaponDto>();
-            //CreateMap<Skill, GetSkillDto>();
-            //CreateMap<Character, HightscoreDto>();
+            CreateMap<Character, AddCharacterDto>();
+            CreateMap<Weapon, GetWeaponDto>();
+            CreateMap<Weapon, AddWeaponDto>();
+            CreateMap<Skill, GetSkillDto>();
+            CreateMap<Character, HightscoreDto>();
 
 
 

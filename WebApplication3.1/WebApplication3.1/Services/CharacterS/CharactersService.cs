@@ -1,34 +1,33 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using WebApplication3._1.Data;
 using WebApplication3._1.Dtos.Character;
 using WebApplication3._1.Models;
 
 namespace WebApplication3._1.Services.CharacterS
 {
-    public class CharactersService:ICharactersService
+    public class CharactersService : ICharactersService
     {
-        private static List<Character> characters = new List<Character>
-        {
-            new Character(),
-            new Character{Id=1, Name="Sam"}
-        };
-
         private readonly IMapper _mapper;
+        private readonly DataContext _db;
 
-        public CharactersService(IMapper mapper)
+        public CharactersService(IMapper mapper, DataContext db)
         {
             _mapper = mapper;
+            _db = db;
         }
+
         public async Task<ServiceResponse<List<GetCharacterDto>>> AddCharacter(AddCharacterDto newC)
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
             Character character = _mapper.Map<Character>(newC);
-            character.Id = characters.Max(c => c.Id) + 1;
-            characters.Add(character);
-            serviceResponse.Data = characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+            await _db.Characters.AddAsync(character);
+            await _db.SaveChangesAsync();
+            serviceResponse.Data = _db.Characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
 
             return serviceResponse;
         }
@@ -38,10 +37,24 @@ namespace WebApplication3._1.Services.CharacterS
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
             try
             {
-                Character character = characters.First(c => c.Id == id);
-                characters.Remove(character);
+                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == id);
 
-                serviceResponse.Data = characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+                if (character != null)
+                {
+
+                    _db.Characters.Remove(character);
+
+                    await _db.SaveChangesAsync();
+                    serviceResponse.Data = _db.Characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+                    serviceResponse.Success = true;
+                }
+                else
+                {
+                    serviceResponse.Success = false;
+                    serviceResponse.Message = "Character not found.";
+                };
+
+                //return serviceResponse;
             }
             catch (Exception ex)
             {
@@ -53,17 +66,27 @@ namespace WebApplication3._1.Services.CharacterS
             return serviceResponse;
         }
 
+
         public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
-            serviceResponse.Data = characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+            var dbCharacters = await _db.Characters
+                 // .Include(x => x.Weapon)
+              //  .Include(x => x.Skills)
+              .ToListAsync();
+            serviceResponse.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
             return serviceResponse;
         }
 
         public async Task<ServiceResponse<GetCharacterDto>> GetCharacterById(int id)
         {
             var serviceResponse = new ServiceResponse<GetCharacterDto>();
-            serviceResponse.Data = _mapper.Map<GetCharacterDto>(characters.FirstOrDefault(c => c.Id == id));
+            var dbCharacter = await _db.Characters
+                //.Include(x => x.Weapon)
+                //.Include(x => x.Skills)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            serviceResponse.Data = _mapper.Map<GetCharacterDto>(dbCharacter);
             return serviceResponse;
 
         }
@@ -73,13 +96,26 @@ namespace WebApplication3._1.Services.CharacterS
             var serviceResponce = new ServiceResponse<GetCharacterDto>();
             try
             {
-                Character character = characters.FirstOrDefault(c => c.Id == ch.Id);
-                character.Name = ch.Name;
-                character.Strength = ch.Strength;
-                character.HitPoints = ch.HitPoints;
-                character.Defence = ch.Defence;
-                character.Intelligence = ch.Intelligence;
-                character.Class = ch.Class;
+                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == ch.Id);
+
+                //if (character.User.Id == GetUserId())
+                //{
+
+                    character.Name = ch.Name;
+                    character.Strength = ch.Strength;
+                    character.HitPoints = ch.HitPoints;
+                    character.Defence = ch.Defence;
+                    character.Intelligence = ch.Intelligence;
+                    character.Class = ch.Class;
+                    
+                _db.Characters.Update(character);
+                    await _db.SaveChangesAsync();
+                //}
+                //else
+                //{
+                //    serviceResponce.Success = false;
+                //    serviceResponce.Message = "Character not found.";
+                //}
 
                 serviceResponce.Data = _mapper.Map<GetCharacterDto>(character);
 

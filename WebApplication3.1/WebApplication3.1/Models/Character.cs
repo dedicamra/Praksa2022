@@ -13,8 +13,8 @@ namespace WebApplication3._1.Models
         public RpgClass Class { get; set; } = RpgClass.Knight;
 
         public User User { get; set; }
-        //public virtual Weapon Weapon { get; set; }
-        //public List<Skill> Skills { get; set; }
+        public virtual Weapon Weapon { get; set; }
+        public List<CharacterSkill> CharacterSkills { get; set; }
 
         public int Fights { get; set; }
         public int Victories { get; set; }

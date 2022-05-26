@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApplication3._1.Data;
 using WebApplication3._1.Dtos.Character;
@@ -14,20 +16,29 @@ namespace WebApplication3._1.Services.CharacterS
     {
         private readonly IMapper _mapper;
         private readonly DataContext _db;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CharactersService(IMapper mapper, DataContext db)
+        public CharactersService(IMapper mapper, DataContext db, IHttpContextAccessor httpContextAccessor)
         {
             _mapper = mapper;
             _db = db;
+            _httpContextAccessor = httpContextAccessor;
         }
+
+        private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
 
         public async Task<ServiceResponse<List<GetCharacterDto>>> AddCharacter(AddCharacterDto newC)
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
             Character character = _mapper.Map<Character>(newC);
+            character.User = await _db.User.FirstOrDefaultAsync(x => x.Id == GetUserId()); 
+            
             await _db.Characters.AddAsync(character);
             await _db.SaveChangesAsync();
-            serviceResponse.Data = _db.Characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+            
+            serviceResponse.Data = _db.Characters
+                .Where(x=>x.User.Id==GetUserId())
+                .Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
 
             return serviceResponse;
         }
@@ -37,7 +48,7 @@ namespace WebApplication3._1.Services.CharacterS
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
             try
             {
-                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == id);
+                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == id && c.User.Id==GetUserId());
 
                 if (character != null)
                 {
@@ -45,7 +56,9 @@ namespace WebApplication3._1.Services.CharacterS
                     _db.Characters.Remove(character);
 
                     await _db.SaveChangesAsync();
-                    serviceResponse.Data = _db.Characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+                    serviceResponse.Data = _db.Characters
+                        .Where(c=>c.User.Id==GetUserId())
+                        .Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
                     serviceResponse.Success = true;
                 }
                 else
@@ -54,7 +67,7 @@ namespace WebApplication3._1.Services.CharacterS
                     serviceResponse.Message = "Character not found.";
                 };
 
-                //return serviceResponse;
+               
             }
             catch (Exception ex)
             {
@@ -67,12 +80,12 @@ namespace WebApplication3._1.Services.CharacterS
         }
 
 
-        public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters(int userId)
+        public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
-            var dbCharacters = await _db.Characters.Where(x=>x.Id==userId)
-                 // .Include(x => x.Weapon)
-              //  .Include(x => x.Skills)
+            var dbCharacters = await _db.Characters.Where(x=>x.User.Id==GetUserId())
+                  .Include(x => x.Weapon)
+                  //.Include(x=>x.CharacterSkills).ThenInclude(x=>x.Skill)
               .ToListAsync();
             serviceResponse.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
             return serviceResponse;
@@ -82,9 +95,10 @@ namespace WebApplication3._1.Services.CharacterS
         {
             var serviceResponse = new ServiceResponse<GetCharacterDto>();
             var dbCharacter = await _db.Characters
+                
                 //.Include(x => x.Weapon)
                 //.Include(x => x.Skills)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync(c => c.Id == id && c.User.Id==GetUserId());
 
             serviceResponse.Data = _mapper.Map<GetCharacterDto>(dbCharacter);
             return serviceResponse;
@@ -96,10 +110,12 @@ namespace WebApplication3._1.Services.CharacterS
             var serviceResponce = new ServiceResponse<GetCharacterDto>();
             try
             {
-                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == ch.Id);
+                Character character = await _db.Characters
+                    .Include(c=>c.User)
+                    .FirstOrDefaultAsync(c => c.Id == ch.Id);
 
-                //if (character.User.Id == GetUserId())
-                //{
+                if (character.User.Id == GetUserId())
+                {
 
                     character.Name = ch.Name;
                     character.Strength = ch.Strength;
@@ -108,14 +124,14 @@ namespace WebApplication3._1.Services.CharacterS
                     character.Intelligence = ch.Intelligence;
                     character.Class = ch.Class;
                     
-                _db.Characters.Update(character);
+                    _db.Characters.Update(character);
                     await _db.SaveChangesAsync();
-                //}
-                //else
-                //{
-                //    serviceResponce.Success = false;
-                //    serviceResponce.Message = "Character not found.";
-                //}
+                }
+                else
+                {
+                    serviceResponce.Success = false;
+                    serviceResponce.Message = "Character not found.";
+                }
 
                 serviceResponce.Data = _mapper.Map<GetCharacterDto>(character);
 

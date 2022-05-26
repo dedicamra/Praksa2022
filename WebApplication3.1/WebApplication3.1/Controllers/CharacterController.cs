@@ -30,8 +30,7 @@ namespace WebApplication3._1.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<ServiceResponse<List<GetCharacterDto>>>> Get()
         {
-            int id= int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value);
-            return Ok(await _service.GetAllCharacters(id));
+            return Ok(await _service.GetAllCharacters());
         }
 
         [HttpGet("{id}")]

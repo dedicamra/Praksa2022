@@ -26,18 +26,19 @@ namespace WebApplication3._1.Services.CharacterS
         }
 
         private int GetUserId() => int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
+        private string GetRole() => _httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Role);
 
         public async Task<ServiceResponse<List<GetCharacterDto>>> AddCharacter(AddCharacterDto newC)
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
             Character character = _mapper.Map<Character>(newC);
-            character.User = await _db.User.FirstOrDefaultAsync(x => x.Id == GetUserId()); 
-            
+            character.User = await _db.User.FirstOrDefaultAsync(x => x.Id == GetUserId());
+
             await _db.Characters.AddAsync(character);
             await _db.SaveChangesAsync();
-            
+
             serviceResponse.Data = _db.Characters
-                .Where(x=>x.User.Id==GetUserId())
+                .Where(x => x.User.Id == GetUserId())
                 .Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
 
             return serviceResponse;
@@ -48,7 +49,7 @@ namespace WebApplication3._1.Services.CharacterS
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
             try
             {
-                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == id && c.User.Id==GetUserId());
+                Character character = await _db.Characters.FirstOrDefaultAsync(c => c.Id == id && c.User.Id == GetUserId());
 
                 if (character != null)
                 {
@@ -57,7 +58,7 @@ namespace WebApplication3._1.Services.CharacterS
 
                     await _db.SaveChangesAsync();
                     serviceResponse.Data = _db.Characters
-                        .Where(c=>c.User.Id==GetUserId())
+                        .Where(c => c.User.Id == GetUserId())
                         .Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
                     serviceResponse.Success = true;
                 }
@@ -67,7 +68,7 @@ namespace WebApplication3._1.Services.CharacterS
                     serviceResponse.Message = "Character not found.";
                 };
 
-               
+
             }
             catch (Exception ex)
             {
@@ -83,10 +84,15 @@ namespace WebApplication3._1.Services.CharacterS
         public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
         {
             var serviceResponse = new ServiceResponse<List<GetCharacterDto>>();
-            var dbCharacters = await _db.Characters.Where(x=>x.User.Id==GetUserId())
+            var role = GetRole();
+            var dbCharacters =
+                GetRole().Equals("Admin") ?
+                await _db.Characters.ToListAsync() :
+                await _db.Characters.Where(x => x.User.Id == GetUserId())
                   .Include(x => x.Weapon)
-                  //.Include(x=>x.CharacterSkills).ThenInclude(x=>x.Skill)
+              //.Include(x=>x.CharacterSkills).ThenInclude(x=>x.Skill)
               .ToListAsync();
+            
             serviceResponse.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
             return serviceResponse;
         }
@@ -95,10 +101,10 @@ namespace WebApplication3._1.Services.CharacterS
         {
             var serviceResponse = new ServiceResponse<GetCharacterDto>();
             var dbCharacter = await _db.Characters
-                
+
                 //.Include(x => x.Weapon)
                 //.Include(x => x.Skills)
-                .FirstOrDefaultAsync(c => c.Id == id && c.User.Id==GetUserId());
+                .FirstOrDefaultAsync(c => c.Id == id && c.User.Id == GetUserId());
 
             serviceResponse.Data = _mapper.Map<GetCharacterDto>(dbCharacter);
             return serviceResponse;
@@ -111,7 +117,7 @@ namespace WebApplication3._1.Services.CharacterS
             try
             {
                 Character character = await _db.Characters
-                    .Include(c=>c.User)
+                    .Include(c => c.User)
                     .FirstOrDefaultAsync(c => c.Id == ch.Id);
 
                 if (character.User.Id == GetUserId())
@@ -123,7 +129,7 @@ namespace WebApplication3._1.Services.CharacterS
                     character.Defence = ch.Defence;
                     character.Intelligence = ch.Intelligence;
                     character.Class = ch.Class;
-                    
+
                     _db.Characters.Update(character);
                     await _db.SaveChangesAsync();
                 }

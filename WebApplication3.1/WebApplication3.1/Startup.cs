@@ -31,7 +31,8 @@ namespace WebApplication3._1
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<DataContext>(opt =>
-               opt.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+               //opt.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            opt.UseSqlite(Configuration.GetConnectionString("SquliteConnection")));
 
             services.AddControllers();
             services.AddSwaggerGen(c =>

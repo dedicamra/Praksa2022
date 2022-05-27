@@ -17,7 +17,7 @@ namespace WebApplication3._1.Dtos.Character
         public int Intelligence { get; set; } = 10;
         public RpgClass Class { get; set; } = RpgClass.Knight;
         public GetWeaponDto Weapon { get; set; }
-        public List<GetSkillDto> Skills { get; set; }
+        public  List<GetSkillDto> Skills { get; set; }=new List<GetSkillDto>();
 
         public int Fights { get; set; }
         public int Victories { get; set; }

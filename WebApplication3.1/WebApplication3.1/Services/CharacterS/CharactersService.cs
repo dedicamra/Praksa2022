@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApplication3._1.Data;
 using WebApplication3._1.Dtos.Character;
+using WebApplication3._1.Dtos.Skills;
 using WebApplication3._1.Models;
 
 namespace WebApplication3._1.Services.CharacterS
@@ -90,11 +91,19 @@ namespace WebApplication3._1.Services.CharacterS
                 await _db.Characters.ToListAsync() :
                 await _db.Characters.Where(x => x.User.Id == GetUserId())
                   .Include(x => x.Weapon)
-              //.Include(x=>x.CharacterSkills).ThenInclude(x=>x.Skill)
+              .Include(x=>x.CharacterSkills).ThenInclude(x=>x.Skill)
               .ToListAsync();
-            
-            serviceResponse.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+
+            var rd = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+            foreach (var character in rd)
+            {
+                character.Skills = _db.CharacterSkills.Where(x => x.CharacterId == character.Id).Select(x => _mapper.Map<GetSkillDto>(x.Skill)).ToList();
+            }
+
+            //serviceResponse.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+            serviceResponse.Data = rd;
             return serviceResponse;
+            
         }
 
         public async Task<ServiceResponse<GetCharacterDto>> GetCharacterById(int id)

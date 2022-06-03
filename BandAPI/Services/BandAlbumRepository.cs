@@ -108,12 +108,12 @@ namespace BandAPI.Services
 
             if (string.IsNullOrEmpty(param.MainGenre) && string.IsNullOrEmpty(param.SearchQuery))
                 return GetBands();
-
-            var collection = _db.Bands as IQueryable<Band>;
+            //var test = _db.Bands.ToList();
+            var collection = _db.Bands.AsQueryable();
             if (!string.IsNullOrEmpty(param.MainGenre))
             {
                 param.MainGenre = param.MainGenre.Trim();
-                collection = collection.Where(x => x.MainGenre == param.MainGenre);
+                collection = collection.Where(x => x.MainGenre.Contains(param.MainGenre));
 
             }
             if (!string.IsNullOrEmpty(param.SearchQuery))

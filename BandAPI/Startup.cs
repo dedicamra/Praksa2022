@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +33,11 @@ namespace BandAPI
         {
             services.AddDbContext<DataContext>(opt =>
                 opt.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-            services.AddControllers();//(setupAction =>
+            services.AddControllers().AddNewtonsoftJson(setupAction =>
+            {
+                setupAction.SerializerSettings.ContractResolver =
+                new CamelCasePropertyNamesContractResolver();
+            });//(setupAction =>
             //{
             //    setupAction.ReturnHttpNotAcceptable = true;
             //});//.AddXmlDataContractSerializerFormatters();
@@ -41,6 +46,8 @@ namespace BandAPI
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "BandAPI", Version = "v1" });
             });
 
+
+            
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IBandAlbumRepository, BandAlbumRepository>();
         }

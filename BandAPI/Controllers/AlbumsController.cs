@@ -2,6 +2,7 @@
 using BandAPI.Dtos;
 using BandAPI.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -53,6 +54,60 @@ namespace BandAPI.Controllers
 
             var albumToReturn=_mapper.Map<AlbumDto>(album);
             return CreatedAtRoute("GetAlbumForBand", new {bandId=bandId, albumId=albumToReturn.Id},albumToReturn);
+        }
+        [HttpPut("{albumId}")]
+        public ActionResult UpdateAlbumForBand(Guid bandId, Guid albumId, [FromBody]AlbumForUpdateDto album)
+        {
+            if (!_bandAlbumRepository.BandExists(bandId))
+                return NotFound();
+            var albumFromRepo = _bandAlbumRepository.GetAlbum(bandId, albumId);
+            if (albumFromRepo == null)
+                return NotFound();
+
+            _mapper.Map(album, albumFromRepo); // ovo updateuje 
+            //_bandAlbumRepository.UpdateAlbum(albumFromRepo);
+            _bandAlbumRepository.Save();
+
+            return NoContent();
+        }
+
+        [HttpPatch] 
+        public ActionResult PartiallyUpdateAlbumBand(Guid bandId, Guid albumId,[FromBody]JsonPatchDocument<AlbumForUpdateDto> patchDocument)
+        {
+            if (!_bandAlbumRepository.BandExists(bandId))
+                return NotFound();
+            var albumFromRepo = _bandAlbumRepository.GetAlbum(bandId, albumId);
+            if (albumFromRepo == null)
+                return NotFound();
+
+            var albumToPatch=_mapper.Map<AlbumForUpdateDto>(albumFromRepo);
+            patchDocument.ApplyTo(albumToPatch, ModelState);
+            if (!TryValidateModel(albumToPatch))
+                return ValidationProblem(ModelState);
+
+            
+            //mapping from dto to entity
+            _mapper.Map(albumToPatch, albumFromRepo);
+            //_bandAlbumRepository.UpdateAlbum(albumFromRepo);
+            _bandAlbumRepository.Save();
+
+            return NoContent();
+        }
+        [HttpDelete("{albumId}")]
+        public ActionResult DeleteAlbumForBand(Guid bandId, Guid albumId)
+        {
+            if (!_bandAlbumRepository.BandExists(bandId))
+                return NotFound();
+
+            var albumFromRepo = _bandAlbumRepository.GetAlbum(bandId, albumId);
+            if (albumFromRepo == null)
+                return NotFound();
+
+
+            _bandAlbumRepository.DeleteAlbum(albumFromRepo);
+            _bandAlbumRepository.Save();
+
+            return NoContent();
         }
     }
 }

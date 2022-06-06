@@ -17,7 +17,8 @@ namespace BandAPI.Controllers
         private readonly IBandAlbumRepository _bandAlbumRepository;
         private readonly IMapper _mapper;
         private readonly IPropertyMappigService _propertyMappigService;
-        public BandsController(IBandAlbumRepository bandAlbumRepository, IMapper mapper, IPropertyMappigService propertyMappigService)
+        private readonly IPropertyValidationService _propertyValidationService;
+        public BandsController(IBandAlbumRepository bandAlbumRepository, IMapper mapper, IPropertyMappigService propertyMappigService, IPropertyValidationService propertyValidationService)
         {
             _bandAlbumRepository = bandAlbumRepository ??
                 throw new ArgumentNullException(nameof(bandAlbumRepository));
@@ -25,14 +26,22 @@ namespace BandAPI.Controllers
                 throw new ArgumentNullException(nameof(mapper));
             _propertyMappigService = propertyMappigService ??
                 throw new ArgumentNullException(nameof(propertyMappigService));
+            _propertyValidationService = propertyValidationService ??
+                throw new ArgumentNullException(nameof(propertyValidationService));
         }
+
+
+        //https://localhost:44349/api/bands?fields=id,name
         [HttpGet(Name = "GetBands")]
         [HttpHead]
-        public ActionResult<IEnumerable<BandDto>> GetBands([FromQuery] BandResourceParameters param)
+        public IActionResult GetBands([FromQuery] BandResourceParameters param)
         {
             if (!_propertyMappigService.ValidMappingExistis<BandDto, Band>(param.OrderBy))
                 return BadRequest();
-            
+
+            if (!_propertyValidationService.HasValidProperties<BandDto>(param.Fields))
+                return BadRequest();
+
             var bandsFromRepo = _bandAlbumRepository.GetBands(param);
 
             var previousPageLink = bandsFromRepo.HasPrevious ?
@@ -53,16 +62,21 @@ namespace BandAPI.Controllers
 
             Response.Headers.Add("Pagination", JsonSerializer.Serialize(metaData));
 
-            return new JsonResult(_mapper.Map<IEnumerable<BandDto>>(bandsFromRepo));
+            return Ok(_mapper.Map<IEnumerable<BandDto>>(bandsFromRepo).ShapeData(param.Fields));
         }
+
         [HttpGet("{bandId}", Name = "GetBand")]
-        public IActionResult GetBand(Guid bandId)
+        public IActionResult GetBand(Guid bandId, string fields)
         {
+            if (!_propertyValidationService.HasValidProperties<BandDto>(fields))
+                return BadRequest();
+
             var bandsFromRepo = _bandAlbumRepository.GetBand(bandId);
+
             if (bandsFromRepo == null)
                 return NotFound();
 
-            return Ok(bandsFromRepo);
+            return Ok(_mapper.Map<BandDto>(bandsFromRepo).ShapeData(fields));
         }
 
         [HttpPost]
@@ -104,7 +118,8 @@ namespace BandAPI.Controllers
                 case UriType.PreviousPage:
                     return Url.Link("GetBands", new
                     {
-                        orderBy=bandResourceParameters.OrderBy,
+                        fields = bandResourceParameters.Fields,
+                        orderBy = bandResourceParameters.OrderBy,
                         pageNumber = bandResourceParameters.PageNumber - 1,
                         pageSize = bandResourceParameters.PageSize,
                         mainGenre = bandResourceParameters.MainGenre,
@@ -113,6 +128,7 @@ namespace BandAPI.Controllers
                 case UriType.NextPage:
                     return Url.Link("GetBands", new
                     {
+                        fields = bandResourceParameters.Fields,
                         orderBy = bandResourceParameters.OrderBy,
                         pageNumber = bandResourceParameters.PageNumber + 1,
                         pageSize = bandResourceParameters.PageSize,
@@ -122,6 +138,7 @@ namespace BandAPI.Controllers
                 default:
                     return Url.Link("GetBands", new
                     {
+                        fields = bandResourceParameters.Fields,
                         orderBy = bandResourceParameters.OrderBy,
                         pageNumber = bandResourceParameters.PageNumber,
                         pageSize = bandResourceParameters.PageSize,

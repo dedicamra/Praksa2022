@@ -101,13 +101,14 @@ namespace BandAPI.Services
 
             return _db.Bands.Where(x => bandIds.Contains(x.Id)).OrderBy(x => x.Name).ToList();
         }
-        public IEnumerable<Band> GetBands(BandResourceParameters param)
+        public PagedList<Band> GetBands(BandResourceParameters param)
         {
             if (param == null)
                 throw new ArgumentNullException(nameof(param));
 
-            if (string.IsNullOrEmpty(param.MainGenre) && string.IsNullOrEmpty(param.SearchQuery))
-                return GetBands();
+            //if (string.IsNullOrEmpty(param.MainGenre) && string.IsNullOrEmpty(param.SearchQuery))
+            //    return GetBands();
+
             //var test = _db.Bands.ToList();
             var collection = _db.Bands.AsQueryable();
             if (!string.IsNullOrEmpty(param.MainGenre))
@@ -123,7 +124,7 @@ namespace BandAPI.Services
                 collection = collection.Where(x => x.Name.Contains(param.SearchQuery));
             }
 
-            return collection.ToList();
+            return PagedList<Band>.Create(collection,param.PageNumber,param.PageSize);
         }
 
         public bool Save()

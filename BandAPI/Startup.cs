@@ -50,6 +50,7 @@ namespace BandAPI
             
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IBandAlbumRepository, BandAlbumRepository>();
+            services.AddScoped<IPropertyMappigService, PropertyMappigService>();   
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

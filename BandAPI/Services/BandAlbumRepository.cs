@@ -10,10 +10,12 @@ namespace BandAPI.Services
     public class BandAlbumRepository : IBandAlbumRepository
     {
         private readonly DataContext _db;
+        private readonly IPropertyMappigService _propertyMappigService;
 
-        public BandAlbumRepository(DataContext db)
+        public BandAlbumRepository(DataContext db, IPropertyMappigService propertyMappigService)
         {
             _db = db ?? throw new ArgumentNullException(nameof(_db));
+            _propertyMappigService = propertyMappigService;
         }
 
         public void AddAlbum(Guid bandId, Album album)
@@ -124,7 +126,15 @@ namespace BandAPI.Services
                 collection = collection.Where(x => x.Name.Contains(param.SearchQuery));
             }
 
-            return PagedList<Band>.Create(collection,param.PageNumber,param.PageSize);
+            //for sorting
+            if (!string.IsNullOrWhiteSpace(param.OrderBy))
+            {
+                var bandPropertyMappingDictionary = _propertyMappigService.GetPropertyMapping<Dtos.BandDto, Entities.Band>();
+
+                collection = collection.ApplySort(param.OrderBy, bandPropertyMappingDictionary);
+            }
+
+            return PagedList<Band>.Create(collection, param.PageNumber, param.PageSize);
         }
 
         public bool Save()

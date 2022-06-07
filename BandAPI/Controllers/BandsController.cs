@@ -6,6 +6,7 @@ using BandAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace BandAPI.Controllers
@@ -56,13 +57,33 @@ namespace BandAPI.Controllers
                 pageSize = bandsFromRepo.PageSize,
                 currentPage = bandsFromRepo.CurrentPage,
                 totalPages = bandsFromRepo.TotalPages,
-                previousPageLink = previousPageLink,
-                nextPageLink = nextPageLink
+                //previousPageLink = previousPageLink,
+                //nextPageLink = nextPageLink
             };
 
             Response.Headers.Add("Pagination", JsonSerializer.Serialize(metaData));
 
-            return Ok(_mapper.Map<IEnumerable<BandDto>>(bandsFromRepo).ShapeData(param.Fields));
+            var links = CreateLinksForBands(param,bandsFromRepo.HasNext,bandsFromRepo.HasPrevious);
+            var shapeBands = _mapper.Map<IEnumerable<BandDto>>(bandsFromRepo).ShapeData(param.Fields);
+
+            var shapeBandsWithLinks = shapeBands.Select(band =>
+            {
+                var bandAsDictionary = band as IDictionary<string, object>;
+                var bandLinks = CreateLinksForBand((Guid)bandAsDictionary["Id"], null);
+                bandAsDictionary.Add("links", bandLinks);
+                return bandAsDictionary;
+            });
+
+            //return shaped bands with links as value for the value field and the links for the band resource
+            //as the value for the links field
+            var linkedCollectionResource = new
+            {
+                value = shapeBandsWithLinks,
+                links
+            };
+            return Ok(linkedCollectionResource);
+
+            //return Ok(_mapper.Map<IEnumerable<BandDto>>(bandsFromRepo).ShapeData(param.Fields));
         }
 
         [HttpGet("{bandId}", Name = "GetBand")]
@@ -76,10 +97,16 @@ namespace BandAPI.Controllers
             if (bandsFromRepo == null)
                 return NotFound();
 
-            return Ok(_mapper.Map<BandDto>(bandsFromRepo).ShapeData(fields));
+            var links = CreateLinksForBand(bandId, fields);
+            var linkResourceToReturn = _mapper.Map<BandDto>(bandsFromRepo).ShapeData(fields) as IDictionary<string, object>;
+
+            linkResourceToReturn.Add("links", links);
+
+            return Ok(linkResourceToReturn);
+            //return Ok(_mapper.Map<BandDto>(bandsFromRepo).ShapeData(fields));
         }
 
-        [HttpPost]
+        [HttpPost(Name ="CreateBand")]
         public ActionResult<BandDto> AddBand(BandForCreatingDto create)
         {
             var bandEntitty = _mapper.Map<Band>(create);
@@ -87,8 +114,11 @@ namespace BandAPI.Controllers
             _bandAlbumRepository.Save();
 
             var bandToReturn = _mapper.Map<BandDto>(bandEntitty);
+            var links = CreateLinksForBand(bandToReturn.Id, null);
+            var linkResourceToReturn = bandToReturn.ShapeData(null) as IDictionary<string, object>;
+            linkResourceToReturn.Add("links", links);
 
-            return CreatedAtRoute("GetBand", new { bandId = bandToReturn.Id }, bandToReturn);
+            return CreatedAtRoute("GetBand", new { bandId = linkResourceToReturn["Id"] }, linkResourceToReturn);
         }
 
         [HttpOptions]
@@ -98,7 +128,7 @@ namespace BandAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete("{bandId}")]
+        [HttpDelete("{bandId}", Name = "DeleteBand")]
         public ActionResult DeleteBand(Guid bandId)
         {
             var band = _bandAlbumRepository.GetBand(bandId);
@@ -110,6 +140,7 @@ namespace BandAPI.Controllers
 
             return NoContent();
         }
+
 
         private string CreateBandsUri(BandResourceParameters bandResourceParameters, UriType uriType)
         {
@@ -135,6 +166,7 @@ namespace BandAPI.Controllers
                         mainGenre = bandResourceParameters.MainGenre,
                         searchQuery = bandResourceParameters.SearchQuery
                     });
+                case UriType.Current:
                 default:
                     return Url.Link("GetBands", new
                     {
@@ -148,5 +180,83 @@ namespace BandAPI.Controllers
             }
         }
 
+        private IEnumerable<LinkDto> CreateLinksForBand(Guid bandId, string fields)
+        {
+            var links = new List<LinkDto>();
+            //self links; links that leads to a single band
+            if (string.IsNullOrWhiteSpace(fields))
+            {
+                //fields are null, we need uri to the band resource
+                links.Add(
+                    new LinkDto(
+                    Url.Link("GetBand", new { bandId = bandId }),
+                    "self",
+                    "GET"));
+
+            }
+            else
+            {
+                //fields are present
+                links.Add(
+                    new LinkDto(
+                    Url.Link("GetBand", new { bandId, fields }),
+                    "self",
+                    "GET"));
+            }
+
+            links.Add(
+                new LinkDto(
+                Url.Link("DeleteBand", new { bandId }),
+                "delete_band",
+                "DELETE"));
+            links.Add(
+                new LinkDto(
+                Url.Link("CreateAlbumForBand", new { bandId }),
+                "create_album_for_band",
+                "POST"));
+            links.Add(
+              new LinkDto(
+              Url.Link("GetAlbumsForBand", new { bandId }),
+              "albums",
+              "GET"));
+
+            return links;
+        }
+
+        private IEnumerable<LinkDto> CreateLinksForBands(BandResourceParameters bandResourceParameters, bool hasNext, bool hasPrevious)
+        {
+            var links = new List<LinkDto>();
+
+            links.Add(
+                new LinkDto(
+                    CreateBandsUri(bandResourceParameters, UriType.Current),
+                    "self",
+                    "GET"
+                    )
+                );
+            if (hasNext)
+            {
+                links.Add(
+               new LinkDto(
+                   CreateBandsUri(bandResourceParameters, UriType.NextPage),
+                   "nextPage",
+                   "GET"
+                   )
+               );
+            }
+            if (hasPrevious)
+            {
+                links.Add(
+               new LinkDto(
+                   CreateBandsUri(bandResourceParameters, UriType.PreviousPage),
+                   "previousPage",
+                   "GET"
+                   )
+               );
+            }
+
+
+            return links;
+        }
     }
 }

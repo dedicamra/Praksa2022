@@ -3,19 +3,13 @@ using BandAPI.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BandAPI
 {
@@ -33,7 +27,12 @@ namespace BandAPI
         {
             services.AddDbContext<DataContext>(opt =>
                 opt.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-            services.AddControllers().AddNewtonsoftJson(setupAction =>
+            services.AddControllers(setupAction =>
+            {
+                setupAction.ReturnHttpNotAcceptable = true;
+                setupAction.CacheProfiles.Add("90SecondsCacheProfile",
+                    new CacheProfile { Duration = 90 });
+            }).AddNewtonsoftJson(setupAction =>
             {
                 setupAction.SerializerSettings.ContractResolver =
                 new CamelCasePropertyNamesContractResolver();
@@ -47,10 +46,10 @@ namespace BandAPI
             });
 
 
-            
+            services.AddResponseCaching();
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IBandAlbumRepository, BandAlbumRepository>();
-            services.AddScoped<IPropertyMappigService, PropertyMappigService>();   
+            services.AddScoped<IPropertyMappigService, PropertyMappigService>();
             services.AddScoped<IPropertyValidationService, PropertyValidationService>();
         }
 
@@ -75,6 +74,7 @@ namespace BandAPI
                 });
             }
 
+            app.UseResponseCaching();
             app.UseHttpsRedirection();
 
             app.UseRouting();
